@@ -1,0 +1,161 @@
+#====================================================================================================
+# Description : Creates a kinesis firehose delivery stream
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Creates a kinesis firehose delivery stream with s3 as destination. Transforms from JSON to parquet.
+  For guidance see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kinesisfirehose-deliverystream.html
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  FirehoseDeliveryRole:
+    Type: String
+    Description: REQUIRED - The ARN of the firehose IAM role
+  DeliveryStreamName:
+    Type: String
+    Description: Optional - The kinesis firehose stream name
+    Default: ""
+  DeliveryStream:
+    Type: String
+    Description: Optional - The delivery stream type
+    AllowedValues:
+      - DirectPut
+      - KinesisStreamAsSource
+  BucketARN:
+    Type: String
+    Description: Required - The Amazon Resource Name (ARN) of the Amazon S3 bucket.
+  SizeInMBs:
+    Type: Number
+    Description: Optional - The size of the buffer, in MBs, that Kinesis Data Firehose uses for incoming data before delivering it to the destination.
+    Default: 128
+  IntervalInSeconds:
+    Type: Number
+    Description: Optional - The length of time, in seconds, that Kinesis Data Firehose buffers incoming data before delivering it to the destination.
+    Default: 300
+  EnableCloudwatch:
+    Type: String
+    Description: Optional - Indicates whether CloudWatch Logs logging is enabled.
+    Default: false
+    AllowedValues:
+      - true
+      - false
+  CloudwatchLogGroupName:
+    Type: String
+    Description: Optional - If EnableCloudwatch is set to true. The name of the CloudWatch Logs log group that contains the log stream that Kinesis Data Firehose will use.
+  CloudwatchLogStreamName:
+    Type: String
+    Description: Optional - If EnableCloudwatch is set to true. The name of the CloudWatch Logs log stream that Kinesis Data Firehose uses to send logs about data delivery.
+  CompressionFormat:
+    Type: String
+    Description: Required - The compression format. If no value is specified, the default is UNCOMPRESSED.
+    Default: UNCOMPRESSED
+    AllowedValues:
+      - GZIP
+      - HADOOP_SNAPPY
+      - Snappy
+      - UNCOMPRESSED
+      - ZIP
+  GlueDatabase:
+    Type: String
+    Description: Required - The aws glue database name
+  GlueTable:
+    Type: String
+    Description: Required - The aws glue table name
+  S3BackupMode:
+    Type: String
+    Description: Optional - The Amazon S3 backup mode. After you create a delivery stream, you can update it to enable Amazon S3 backup if it is disabled. If backup is enabled, you can't update the delivery stream to disable it.
+    Default: Disabled
+    AllowedValues:
+      - Disabled
+      - Enabled
+  NoEncryptionConfig:
+    Type: String
+    Description: Optional - Disables encryption. For valid values, see the NoEncryptionConfig content for the EncryptionConfiguration data type in the Amazon Kinesis Data Firehose API Reference.
+    Default: NoEncryption
+  ErrorOutputPrefix:
+    Type: String
+    Description: Optional - A prefix that Kinesis Data Firehose evaluates and adds to failed records before writing them to S3
+    Default: "_failed/!{firehose:error-output-type}/!{timestamp:yyyy-MM-dd-HH}/"
+  Prefix:
+    Type: String
+    Description: Optional - The YYYY/MM/DD/HH time format prefix is automatically used for delivered Amazon S3 files. 
+    Default: ""
+
+#====================================================================================================
+#                                          Conditions
+#====================================================================================================
+Conditions:
+  HasDeliveryStreamName: !Equals [!Ref DeliveryStreamName, ""]
+  HasDeliveryStream: !Equals [!Ref DeliveryStream, ""]
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  KinesisFirehoseDeliveryStream:
+    Type: "AWS::KinesisFirehose::DeliveryStream"
+    Properties:
+      DeliveryStreamName: !If [HasDeliveryStreamName, !Ref DeliveryStreamName, !Ref "AWS::NoValue"]
+      DeliveryStreamType: !If [HasDeliveryStream, !Ref DeliveryStream, !Ref "AWS::NoValue"]
+      ExtendedS3DestinationConfiguration:
+        BucketARN: !Ref BucketARN
+        BufferingHints:
+          SizeInMBs: !Ref SizeInMBs
+          IntervalInSeconds: !Ref IntervalInSeconds
+        CloudWatchLoggingOptions:
+          Enabled: !Ref EnableCloudwatch
+          LogGroupName: !Ref CloudwatchLogGroupName
+          LogStreamName: !Ref CloudwatchLogStreamName
+        CompressionFormat: !Ref CompressionFormat
+        DataFormatConversionConfiguration:
+          SchemaConfiguration:
+            CatalogId: !Ref AWS::AccountId
+            RoleARN: !Ref FirehoseDeliveryRole
+            DatabaseName: !Ref GlueDatabase
+            TableName: !Ref GlueTable
+            Region: !Ref AWS::Region
+            VersionId: LATEST
+          InputFormatConfiguration:
+            Deserializer:
+              OpenXJsonSerDe: {}
+          OutputFormatConfiguration:
+            Serializer:
+              ParquetSerDe: {}
+          Enabled: true
+        DynamicPartitioningConfiguration:
+          RetryOptions:
+            DurationInSeconds: 300
+          Enabled: true
+        EncryptionConfiguration:
+          NoEncryptionConfig: !Ref NoEncryptionConfig
+        ErrorOutputPrefix: !Ref ErrorOutputPrefix
+        Prefix: !Ref Prefix
+        RoleARN: !Ref FirehoseDeliveryRole
+        ProcessingConfiguration:
+          Enabled: true
+          Processors:
+            - Type: "RecordDeAggregation"
+              Parameters:
+                - ParameterName: "SubRecordType"
+                  ParameterValue: "JSON"
+            - Type: "AppendDelimiterToRecord"
+            - Type: "MetadataExtraction"
+              Parameters:
+                - ParameterName: "JsonParsingEngine"
+                  ParameterValue: "JQ-1.6"
+        S3BackupMode: !Ref S3BackupMode
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  KinesisFirehoseName:
+    Description: Kinesis Firehose Name
+    Value: !Ref KinesisFirehoseDeliveryStream
+  KinesisFirehoseArn:
+    Description: Kinesis Firehose Name
+    Value: !GetAtt KinesisFirehoseDeliveryStream.Arn

@@ -1,0 +1,70 @@
+#====================================================================================================
+# Description : Creates an IAM role for kinesis firehose
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Creates an IAM role for kinesis firehose. For guidance see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  S3Bucket:
+    Type: String
+    Description: The name of the s3 bucket
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  FirehoseDeliveryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - firehose.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref AWS::AccountId
+      Path: /
+      Policies:
+        - PolicyName: firehose_delivery_policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${S3Bucket}
+                  - !Sub arn:aws:s3:::${S3Bucket}*
+              - Effect: Allow
+                Action: glue:GetTableVersions
+                Resource: '*'
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  IAMRole:
+    Description: The IAM Role Name
+    Value: !Ref FirehoseDeliveryRole
+  IAMRoleArn:
+    Description: The IAM Role Arn
+    Value: !GetAtt FirehoseDeliveryRole.Arn
+  IAMRoleId:
+    Description: The IAM Role ID
+    Value: !GetAtt FirehoseDeliveryRole.RoleId

@@ -1,0 +1,35 @@
+#====================================================================================================
+# Description : Creates an AWS Glue Database
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Creates an AWS Glue Database. For guidance see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-glue-database.html
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  GlueDBName:
+    Type: String
+    Description: The name of the glue database
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  GlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Ref GlueDBName
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  GlueDatabaseName:
+    Description: AWS Glue Database Name
+    Value: !Ref GlueDatabase

@@ -1,0 +1,195 @@
+#====================================================================================================
+# Description : Creates an AWS Glue Table. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-glue-table.html#aws-resource-glue-table-properties 
+# for guidance
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::LanguageExtensions
+Description: >-
+  Creates an AWS Glue Table. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-glue-table.html#aws-resource-glue-table-properties 
+  for guidance
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  GlueDBName:
+    Type: String
+    Description: REQUIRED - The name of the glue database
+  TableName:
+    Type: String
+    Description: Optional - The table name. AWS will create one based on the CFN Stack name if this is left blank
+    Default: ""
+  Location:
+    Type: String
+    Description: Optional - The physical location of the table
+    Default: ""
+  InputFormat:
+    Type: String
+    Description: Optional - The input format SequenceFileInputFormat (binary), or TextInputFormat, or a custom format
+    Default: ""
+  OutputFormat:
+    Type: String
+    Description: Optional - The input format SequenceFileInputFormat (binary), or TextInputFormat, or a custom format
+    Default: ""
+  Compressed:
+    Type: String
+    Description: Optional - The compressed value
+    AllowedValues:
+      - true
+      - false
+  NumberOfBuckets:
+    Type: Number
+    Description: Optional - The number of buckets
+    Default: ""
+  BucketColumns: 
+    Type: List<String>
+    Description: Optional - A list of reducer grouping columns, clustering columns, and bucketing columns in the table.
+    Default: ""
+  SchemaVersionId:
+    Type: String
+    Description: Optional - The unique ID assigned to a version of the schema. Either this or the SchemaId has to be provided.
+    Default: ""
+  SchemaVersionNumber:
+    Type: Number
+    Description: Optional - The version number of the schema.
+    Default: ""
+  RegistryName:
+    Type: String
+    Description: Optional - The name of the schema registry that contains the schema.
+    Default: ""
+  SchemaArn:
+    Type: String
+    Description: Optional - The Amazon Resource Name (ARN) of the schema. One of SchemaArn or SchemaName has to be provided.
+    Default: ""
+  SchemaName:
+    Type: String
+    Description: Optional - The name of the schema. One of SchemaArn or SchemaName has to be provided.
+    Default: ""
+  Name: 
+    Type: String
+    Description: Optional - Name of the SerDe.
+    Default: ""
+  SerializationLibrary:
+    Type: String
+    Description: Optional - SerializationLibrary
+    Default: ""
+  SkewedColumnNames:
+    Type: List<String>
+    Description: Optional - SkewedColumnNames
+    Default: ""
+  SkewedColumnValues:
+    Type: List<String>
+    Description: Optional - A list of values that appear so frequently as to be considered skewed.
+    Default: ""
+  StoredAsSubDirectories:
+    Type: String
+    Description: Optional - The compressed value
+    AllowedValues:
+      - true
+      - false
+  TableType:
+    Type: String
+    Description: Optional - The type of this table. AWS Glue will create tables with the EXTERNAL_TABLE type. Other services, such as Athena, may create tables with additional table types.
+    Default: EXTERNAL_TABLE
+    AllowedValues:
+      - EXTERNAL_TABLE
+      - GOVERNED
+  ViewExpandedText:
+    Type: String
+    Description: Optional - Included for Apache Hive compatibility. Not used in the normal course of AWS Glue operations.
+    Default: ""
+  ViewOriginalText:
+    Type: String
+    Description: Optional - Included for Apache Hive compatibility. Not used in the normal course of AWS Glue operations. If the table is a VIRTUAL_VIEW, certain Athena configuration encoded in base64.
+    Default: ""
+  Owner: 
+    Type: String
+    Description: Optional - The table owner. Included for Apache Hive compatibility. Not used in the normal course of AWS Glue operations.
+    Default: ""
+  TableDescription: 
+    Type: String
+    Description: Optional - A description of the table.
+    Default: ""
+  Retention: 
+    Type: Number
+    Description: Optional - The retention time for this table.
+    Default: 0
+
+#====================================================================================================
+#                                          Conditions
+#====================================================================================================
+Conditions:
+  HasTableName: !Equals [!Ref TableName, ""]
+  HasTableDescription: !Equals [!Ref TableDescription, ""]
+  HasOwner: !Equals [!Ref Owner, ""]
+  HasRetention: !Equals [!Ref Retention, ""]
+  HasBucketColumns: !Equals [!Ref BucketColumns, ""]
+  HasInputFormat: !Equals [!Ref InputFormat, ""]
+  HasLocation: !Equals [!Ref Location, ""]
+  HasNumberOfBuckets: !Equals [!Ref NumberOfBuckets, ""]
+  HasOutputFormat: !Equals [!Ref OutputFormat, ""]
+  HasRegistryName: !Equals [!Ref RegistryName, ""]
+  HasSchemaArn: !Equals [!Ref SchemaArn, ""]
+  HasSchemaName: !Equals [!Ref SchemaName, ""]
+  HasSchemaVersionId: !Equals [!Ref SchemaVersionId, ""]
+  HasSchemaVersionNumber: !Equals [!Ref SchemaVersionNumber, ""]
+  HasName: !Equals [!Ref Name, ""]
+  HasSerializationLibrary: !Equals [!Ref SerializationLibrary, ""]
+  HasSkewedColumnNames: !Equals [!Ref SkewedColumnNames, ""]
+  HasSkewedColumnValues: !Equals [!Ref SkewedColumnValues, ""]
+  HasTableType: !Equals [!Ref TableType, ""]
+  HasViewExpandedText: !Equals [!Ref ViewExpandedText, ""]
+  HasViewOriginalText: !Equals [!Ref ViewOriginalText, ""]
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  GlueTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref GlueDBName
+      TableInput:
+        Name: !If [ HasTableName, !Ref TableName, !Ref "AWS::NoValue" ]
+        Description: !If [ HasTableDescription,!Ref TableDescription, !Ref "AWS::NoValue" ]
+        Owner: !If [ HasOwner, !Ref Owner, !Ref "AWS::NoValue" ]
+        Retention: !If [ HasRetention, !Ref Retention, !Ref "AWS::NoValue" ]
+        Parameters:
+          classification: "parquet"
+        StorageDescriptor:
+          BucketColumns: !If [ HasBucketColumns, !Ref BucketColumns , !Ref "AWS::NoValue" ]
+          Compressed: !Ref Compressed
+          InputFormat: !If [ HasInputFormat, !Ref InputFormat, !Ref "AWS::NoValue" ]
+          Location: !If [ HasLocation, !Ref Location , !Ref "AWS::NoValue" ]
+          NumberOfBuckets: !If [ HasNumberOfBuckets, !Ref NumberOfBuckets, !Ref "AWS::NoValue" ]
+          OutputFormat: !If [ HasOutputFormat, !Ref OutputFormat, !Ref "AWS::NoValue" ]
+          SchemaReference: 
+            SchemaId: 
+              RegistryName: !If [ HasRegistryName, !Ref RegistryName, !Ref "AWS::NoValue" ]
+              SchemaArn: !If [ HasSchemaArn, !Ref SchemaArn, !Ref "AWS::NoValue" ]
+              SchemaName: !If [ HasSchemaName, !Ref SchemaName , !Ref "AWS::NoValue" ]
+            SchemaVersionId: !If [ HasSchemaVersionId, !Ref SchemaVersionId , !Ref "AWS::NoValue" ]
+            SchemaVersionNumber: !If [ HasSchemaVersionNumber, !Ref SchemaVersionNumber , !Ref "AWS::NoValue" ]
+          SerdeInfo:
+            Name: !If [ HasName, !Ref Name , !Ref "AWS::NoValue" ]
+            Parameters:
+              serialization.format: "1"
+            SerializationLibrary: !If [ HasSerializationLibrary, !Ref SerializationLibrary , !Ref "AWS::NoValue" ]
+          SkewedInfo:
+            SkewedColumnNames: !If [ HasSkewedColumnNames, !Ref SkewedColumnNames, !Ref "AWS::NoValue" ]
+            SkewedColumnValues: !If [ HasSkewedColumnValues, !Ref SkewedColumnValues, !Ref "AWS::NoValue" ]
+          StoredAsSubDirectories: !Ref StoredAsSubDirectories
+        TableType: !If [ HasTableType, !Ref TableType, !Ref "AWS::NoValue" ]
+        ViewExpandedText: !If [ HasViewExpandedText, !Ref ViewExpandedText, !Ref "AWS::NoValue" ]
+        ViewOriginalText: !If [ HasViewOriginalText, !Ref ViewOriginalText, !Ref "AWS::NoValue" ]
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  GlueTableName:
+    Description: The name of the glue table name
+    Value: !Ref GlueTable
