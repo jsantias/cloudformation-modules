@@ -1,0 +1,54 @@
+#====================================================================================================
+# Description : Deploys an ECS Fargate Cluster
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Deploys an ECS Fargate Cluster
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  ClusterName:
+    Type: String
+    Description: Optional - The ECS Cluster Name
+    Default: ""
+
+#====================================================================================================
+#                                          Conditions
+#====================================================================================================
+Conditions:
+  HasClusterName: !Not [!Equals [!Ref ClusterName, ""]]
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !If [HasClusterName, !Ref ClusterName, !Ref "AWS::NoValue"]
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+      CapacityProviders:
+        - FARGATE
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+      Configuration:
+        ExecuteCommandConfiguration:
+          Logging: DEFAULT
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  ECSClusterName:
+    Description: Name of ECS Task Role
+    Value: !Ref Cluster
+  ECSClusterArn:
+    Description: The ARN of the ecs cluster
+    Value: !GetAtt Cluster.Arn

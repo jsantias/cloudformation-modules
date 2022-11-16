@@ -89,8 +89,8 @@ Parameters:
 #                                          Conditions
 #====================================================================================================
 Conditions:
-  HasDeliveryStreamName: !Equals [!Ref DeliveryStreamName, ""]
-  HasDeliveryStream: !Equals [!Ref DeliveryStream, ""]
+  HasDeliveryStreamName: !Not [!Equals [!Ref DeliveryStreamName, ""]]
+  HasDeliveryStream: !Not [!Equals [!Ref DeliveryStream, ""]]
 
 #====================================================================================================
 #                                          Resources

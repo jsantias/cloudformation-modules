@@ -1,0 +1,74 @@
+#====================================================================================================
+# Description : Deploys an ECS Fargate Cluster
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Deploys an ECS Fargate Cluster
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  ClusterName:
+    Type: String
+    Description: Optional - The name of the ECS Cluster. If you do not specify a cluster, the default cluster is assumed.
+  ServiceName:
+    Type: String
+    Description: Optional - The name of the Service
+    Default: ""
+  TaskDefinition:
+    Type: String
+    Description: Required - The task definition
+  Subnets:
+    Type: List<String>
+    Description: Optional - list of subnets (limit of 16)
+    Default: ""
+  SecurityGroups:
+    Type: List<String>
+    Description: Optional - list of security group ids (limit of 5)
+    Default: ""
+
+#====================================================================================================
+#                                          Conditions
+#====================================================================================================
+Conditions:
+  HasClusterName: !Not [!Equals [!Ref ClusterName, ""]]
+  HasServiceName: !Not [!Equals [!Ref ServiceName, ""]]
+  HasSubnets: !Not [!Equals [!Ref Subnets, ""]]
+  HasSecurityGroups: !Not [!Equals [!Ref SecurityGroups, ""]]
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !If [HasServiceName, !Ref ServiceName, !Ref "AWS::NoValue"]
+      Cluster: !If [HasClusterName, !Ref ClusterName, !Ref "AWS::NoValue"]
+      TaskDefinition: !Ref TaskDefinition
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount: 1
+      # This may need to be adjusted if the container takes a while to start up
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          # change to DISABLED if you're using private subnets that have access to a NAT gateway
+          AssignPublicIp: DISABLED
+          Subnets: !If [HasSubnets, !Ref Subnets, !Ref "AWS::NoValue"]
+          SecurityGroups: !If [HasSecurityGroups, !Ref SecurityGroups, !Ref "AWS::NoValue"]
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  ECSServiceArn:
+    Description: The ARN of the ECS Service
+    Value: !Ref Service
+  ECSServiceName:
+    Description: Name of ECS Service
+    Value: !GetAtt Service.Name

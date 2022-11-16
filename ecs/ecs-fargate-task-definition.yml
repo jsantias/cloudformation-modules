@@ -1,0 +1,91 @@
+#====================================================================================================
+# Description : Deploys an ECS Fargate Cluster
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Deploys an ECS Fargate Cluster
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  FamilyName:
+    Type: String
+    Description: Optional - The family name of the task definition
+    Default: ""
+  ExecutionRoleArn:
+    Type: String
+    Description: Required - The execution IAM Role ARN
+  TaskRoleArn:
+    Type: String
+    Description: Required - The task IAM Role ARN
+  CpuArchitecture:
+    Type: String
+    Description: Required - The CPU Architecture
+    Default: ARM64
+    AllowedValues:
+    - ARM64
+    - X86_64
+  OperatingSystemFamily:
+    Type: String
+    Description: Required - The operating system
+    Default: LINUX
+    AllowedValues:
+    - LINUX
+    - WINDOWS_SERVER_2004_CORE
+    - WINDOWS_SERVER_2016_FULL
+    - WINDOWS_SERVER_2019_CORE
+    - WINDOWS_SERVER_2019_FULL
+    - WINDOWS_SERVER_2022_CORE
+    - WINDOWS_SERVER_2022_FULL
+    - WINDOWS_SERVER_20H2_CORE
+  ContainerName:
+    Type: String
+    Description: Required - The name of the container
+  Image:
+    Type: String
+    Description: Required - The container image  
+
+#====================================================================================================
+#                                          Conditions
+#====================================================================================================
+Conditions:
+ HasFamily: !Not [!Equals [!Ref FamilyName, ""]]
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !If [HasFamily, !Ref FamilyName, !Ref "AWS::NoValue"]
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 256
+      Memory: 0.5GB
+      ExecutionRoleArn: !Ref ExecutionRoleArn
+      TaskRoleArn: !Ref TaskRoleArn
+      RuntimePlatform:
+        CpuArchitecture: !Ref CpuArchitecture
+        OperatingSystemFamily: !Ref OperatingSystemFamily
+      ContainerDefinitions:
+        - Name: !Ref ContainerName
+          Image: !Ref Image
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: ap-southeast-2
+              awslogs-group: !Join ["", [/ecs/, !Ref ContainerName]]
+              awslogs-stream-prefix: ecs
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  TaskDefinitionARN:
+    Description: The arn of the task definition
+    Value: !Ref TaskDefinition
