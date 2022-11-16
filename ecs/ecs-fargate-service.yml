@@ -60,7 +60,8 @@ Resources:
           # change to DISABLED if you're using private subnets that have access to a NAT gateway
           AssignPublicIp: DISABLED
           Subnets: !If [HasSubnets, !Ref Subnets, !Ref "AWS::NoValue"]
-          SecurityGroups: !If [HasSecurityGroups, !Ref SecurityGroups, !Ref "AWS::NoValue"]
+          SecurityGroups:
+            !If [HasSecurityGroups, !Ref SecurityGroups, !Ref "AWS::NoValue"]
 
 #====================================================================================================
 #                                             Outputs

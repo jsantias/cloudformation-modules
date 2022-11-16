@@ -1,0 +1,60 @@
+#====================================================================================================
+# Description : Deploys an S3 VPC endpoint
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Deploys an S3 VPC endpoint
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  VPC:
+    Type: String
+    Description: The VPC ID
+  RouteTableIds:
+    Type: List<String>
+    Description: The route table Ids
+  VpcEndpointType:
+    Type: String
+    Description: The VPC endpoint type
+    AllowedValues:
+      - Gateway
+      - GatewayLoadBalancer
+      - Interface
+  ServiceName:
+    Type: String
+    Description: The service name (see https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeVpcEndpointServices.html)
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  VpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      ServiceName: !Ref ServiceName
+      VpcEndpointType: !Ref VpcEndpointType
+      VpcId: !Ref VPC
+      RouteTableIds: !Ref RouteTableIds
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  VpcEndpoint:
+    Description: The VPC endpoint ID
+    Value: !Ref VpcEndpoint
+  VpcEndpointCreationTimestamp:
+    Description: The creation timestamp of the endpoint
+    Value: !GetAtt VpcEndpoint.CreationTimestamp
+  VpcEndpointDnsEntries:
+    Description: A list of DNS entries
+    Value: !Join [",", !GetAtt VpcEndpoint.DnsEntries]
+  VpcEndpointNetworkInterfaceIds:
+    Description: A list of network interface ids
+    Value: !Join [",", !GetAtt VpcEndpoint.NetworkInterfaceIds]

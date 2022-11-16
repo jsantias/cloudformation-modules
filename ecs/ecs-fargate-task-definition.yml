@@ -26,33 +26,33 @@ Parameters:
     Description: Required - The CPU Architecture
     Default: ARM64
     AllowedValues:
-    - ARM64
-    - X86_64
+      - ARM64
+      - X86_64
   OperatingSystemFamily:
     Type: String
     Description: Required - The operating system
     Default: LINUX
     AllowedValues:
-    - LINUX
-    - WINDOWS_SERVER_2004_CORE
-    - WINDOWS_SERVER_2016_FULL
-    - WINDOWS_SERVER_2019_CORE
-    - WINDOWS_SERVER_2019_FULL
-    - WINDOWS_SERVER_2022_CORE
-    - WINDOWS_SERVER_2022_FULL
-    - WINDOWS_SERVER_20H2_CORE
+      - LINUX
+      - WINDOWS_SERVER_2004_CORE
+      - WINDOWS_SERVER_2016_FULL
+      - WINDOWS_SERVER_2019_CORE
+      - WINDOWS_SERVER_2019_FULL
+      - WINDOWS_SERVER_2022_CORE
+      - WINDOWS_SERVER_2022_FULL
+      - WINDOWS_SERVER_20H2_CORE
   ContainerName:
     Type: String
     Description: Required - The name of the container
   Image:
     Type: String
-    Description: Required - The container image  
+    Description: Required - The container image
 
 #====================================================================================================
 #                                          Conditions
 #====================================================================================================
 Conditions:
- HasFamily: !Not [!Equals [!Ref FamilyName, ""]]
+  HasFamily: !Not [!Equals [!Ref FamilyName, ""]]
 
 #====================================================================================================
 #                                          Resources
