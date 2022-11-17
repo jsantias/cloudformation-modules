@@ -1,0 +1,68 @@
+#====================================================================================================
+# Description : Deploys an Elastic Container Repository (ECR)
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Deploys an Elastic Container Repository (ECR)
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  RepositoryName:
+    Type: String
+    Description: Name of the repository
+  IAMRole:
+    Type: String
+    Description: IAM role ARN
+  AccountID:
+    Type: List<String>
+    Description: the AWS Account IDs allowed to pull the image. e.g. arn:aws:iam::123456789101:root, arn:aws:iam::123456789101:root
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  ECR:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref RepositoryName
+      RepositoryPolicyText:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowPushPull
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Ref IAMRole
+            Action:
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:PutImage"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:CompleteLayerUpload"
+          - Sid: AllowPull
+            Effect: Allow
+            Principal:
+              AWS: !Ref AccountID
+            Action:
+              - "ecr:BatchGetImage"
+              - "ecr:GetDownloadUrlForLayer"
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  ECRName:
+    Description: The resource name
+    Value: !Ref ECR
+  ECRArn:
+    Description: The ECR ARN
+    Value: !GetAtt ECR.Arn
+  ECRRepositoryUri:
+    Description: The ECR repository URI
+    Value: !GetAtt ECR.RepositoryUri
