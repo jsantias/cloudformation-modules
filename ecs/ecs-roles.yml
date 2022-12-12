@@ -1,0 +1,101 @@
+#====================================================================================================
+# Description : Deploys IAM ECS Execution and Task roles with IAM Policies
+# Author      : John Santias
+# Date        : 06-08-2022
+# Version     : 1.0.0
+#====================================================================================================
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Deploys IAM ECS Execution and Task roles with IAM Policies
+#====================================================================================================
+#                                          Parameters
+#====================================================================================================
+Parameters:
+  ServiceName:
+    Type: String
+    Description: The ecs service name
+  SecretArn:
+    Type: String
+    Description: The Secrets manager secret ARN
+
+#====================================================================================================
+#                                          Resources
+#====================================================================================================
+Resources:
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ["", [!Ref ServiceName, ExecutionRole]]
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ["", [!Ref ServiceName, TaskRole]]
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: "sts:AssumeRole"
+
+  ECSTaskPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - firehose:PutRecord
+            Resource:
+              - "*"
+      PolicyName: ecs-task-policy
+      Roles:
+        - !Ref TaskRole
+
+  ECSExecutionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Ref SecretArn
+      PolicyName: ecs-execution-policy
+      Roles:
+        - !Ref ExecutionRole
+
+  AutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join ["", [!Ref ServiceName, AutoScalingRole]]
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole"
+
+#====================================================================================================
+#                                             Outputs
+#====================================================================================================
+Outputs:
+  ECSRole:
+    Description: Name of ECS Execution Role
+    Value: !GetAtt ["ExecutionRole", "Arn"]
+
+  ECSTaskRole:
+    Description: Name of ECS Task Role
+    Value: !GetAtt ["TaskRole", "Arn"]
